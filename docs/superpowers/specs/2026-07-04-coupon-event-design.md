@@ -86,6 +86,8 @@ Kafka Consumer Group
 
 ## 4. 데이터 모델
 
+인증 없이 `userId`를 단순 식별자로만 사용하므로 별도 `User` 테이블은 두지 않는다. 쿠폰 "사용(redeem)" 흐름도 요구사항에 없으므로 상태값 없이 "발급 기록의 존재 여부"로 발급 여부를 판단한다. 딱 필요한 2개 테이블만 둔다.
+
 ```sql
 CREATE TABLE coupon_event (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -93,11 +95,7 @@ CREATE TABLE coupon_event (
     total_quantity INT NOT NULL,
     issued_quantity INT NOT NULL DEFAULT 0,  -- Phase 1의 SSOT. Phase 2/3부터는 참고용(SSOT는 Redis)
     start_at DATETIME NOT NULL,
-    end_at DATETIME,
-    status VARCHAR(20) NOT NULL,             -- READY, OPEN, CLOSED
-    version BIGINT NOT NULL DEFAULT 0,        -- 낙관적 락 실험용
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
+    created_at DATETIME NOT NULL
 );
 
 CREATE TABLE issued_coupon (
@@ -105,19 +103,20 @@ CREATE TABLE issued_coupon (
     coupon_event_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     issued_at DATETIME NOT NULL,
-    status VARCHAR(20) NOT NULL,             -- ISSUED, USED, CANCELLED
     UNIQUE KEY uk_event_user (coupon_event_id, user_id)
 );
 ```
 
 `issued_coupon.uk_event_user`는 모든 Phase에서 "동일 사용자 중복 발급"을 막는 최종 방어선 역할을 한다 (Redis 판정이 뚫리거나 Kafka가 메시지를 재처리해도 DB 레벨에서 막힘).
 
+이벤트를 조기 종료하거나 낙관적 락을 실험하는 등의 기능이 필요해지면 그때 필드를 추가한다(YAGNI).
+
 ## 5. API 스펙 (초안)
 
 | Method | Path | 설명 |
 |---|---|---|
 | POST | `/api/admin/coupon-events` | 이벤트 생성 (`name`, `totalQuantity`, `startAt`) |
-| GET | `/api/admin/coupon-events` | 이벤트 목록 조회 (QueryDSL 동적 검색: 상태, 기간 등) |
+| GET | `/api/admin/coupon-events` | 이벤트 목록 조회 (QueryDSL 동적 검색: 이름, 기간 등) |
 | POST | `/api/coupon-events/{eventId}/issue` | 쿠폰 발급 요청 (`userId`) → `200 SUCCESS` / `409 DUPLICATE` / `410 SOLD_OUT` / `403 NOT_OPEN_YET` |
 | GET | `/api/coupon-events/{eventId}/users/{userId}/status` | 발급 상태 조회 (Phase 3에서 비동기 반영 지연을 확인하는 용도) |
 
@@ -144,9 +143,11 @@ CREATE TABLE issued_coupon (
 
 ## 9. 테스트 전략
 
-- **단위 테스트**: Redis Lua 스크립트 로직(재고 소진/중복 판정 케이스), 재고 계산 로직. Testcontainers Redis 사용.
-- **동시성/통합 테스트**: Testcontainers(MySQL + Redis + Kafka)를 띄우고 `ExecutorService`로 N개 동시 요청을 발생시켜 "정확히 `total_quantity`개만 성공"하는지, 사용자당 중복 미발급인지를 검증한다.
-- **부하 테스트**: k6로 100 → 1,000 → 10,000 VU 단계별 시나리오를 작성한다. 응답시간(p95/p99), 에러율을 측정하고, 테스트 종료 후 "최종 DB row 수 == 재고 수량"이 일치하는지 사후 검증 스크립트로 확인한다.
+Testcontainers는 쓰지 않는다. 로컬 개발 환경도 어차피 docker-compose로 MySQL/Redis/Kafka를 띄우기로 했으므로, 그 인프라에 직접 연결해서 검증한다(별도 컨테이너 라이프사이클 관리가 필요 없어 더 가볍고, 학습 프로젝트 규모에 CI 파이프라인까지는 고려하지 않는다).
+
+- **단위 테스트**: Redis Lua 스크립트 로직(재고 소진/중복 판정 케이스), 재고 계산 로직 등 순수 비즈니스 로직 검증.
+- **동시성 통합 테스트**: 로컬 docker-compose로 띄운 MySQL/Redis/Kafka에 직접 연결해서, `ExecutorService`로 N개 동시 요청을 발생시켜 "정확히 `total_quantity`개만 성공"하는지, 사용자당 중복 미발급인지를 검증한다.
+- **부하 테스트**: k6로 100 → 1,000 → 10,000 VU 단계별 시나리오를 작성한다. 응답시간(p95/p99), 에러율을 측정하고, 테스트 종료 후 "최종 DB row 수 == 재고 수량"이 일치하는지 사후 검증 스크립트로 확인한다. 동시성/정합성 최종 검증은 사실상 이 단계에서 실질적으로 이뤄진다.
 
 ## 10. 범위 밖 (Out of Scope)
 
