@@ -2,7 +2,7 @@ spring:
   application:
     name: coupon-event
   datasource:
-    url: jdbc:mysql://localhost:3306/coupon_event?useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/coupon_event?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: coupon
     password: coupon
     driver-class-name: com.mysql.cj.jdbc.Driver
