@@ -58,6 +58,8 @@ flowchart TB
 | 7 | [task-7-concurrency-test.md](task-7-concurrency-test.md) | `992bc5c` |
 | 8 | [task-8-load-test.md](task-8-load-test.md) | `3abaf75` |
 
+직접 API를 호출하고 락을 손으로 느껴보고 싶다면 [manual-testing-guide.md](manual-testing-guide.md) 참고.
+
 ## 계획 대비 주요 편차
 
 Spring Boot **4.1.0**은 계획 작성 시점에 가정했던 패키지/모듈 구조와 달라서, 실행 중 두 차례 계획을 벗어난 수정이 필요했다:
