@@ -13,6 +13,39 @@
   실제 HTTP 요청을 보내 예외 → HTTP 상태 매핑까지 검증 (품절 시 410/SOLD_OUT, 성공 시 200/SUCCESS)
 - 전체 스위트(`./gradlew test`) 재실행해 이전 Task 결과물과 충돌 없음을 확인
 
+## 요청~응답 흐름
+
+Task 5의 판정 로직이 실제 HTTP 요청 안에서 어떻게 성공/실패 응답으로 이어지는지 정리하면 다음과 같다.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant Ctrl as CouponIssueController
+    participant Svc as CouponIssueService
+    participant Repo as CouponEventRepository
+    participant DB as MySQL
+    participant GEH as GlobalExceptionHandler
+
+    C->>Ctrl: POST /api/coupon-events/{eventId}/issue { userId }
+    Ctrl->>Svc: issue(eventId, userId)
+    Svc->>Repo: findByIdForUpdate(eventId)
+    Repo->>DB: SELECT ... FOR UPDATE
+    Note over DB: 동시 요청은 여기서 직렬화\n(다른 트랜잭션이 끝날 때까지 대기)
+    DB-->>Repo: CouponEvent row
+    Repo-->>Svc: CouponEvent
+
+    alt 오픈 전 / 품절 / 중복 / 이벤트 없음
+        Svc-->>GEH: throw CouponXxxException
+        GEH-->>C: 403 / 410 / 409 / 404 + ErrorResponse
+    else 발급 가능
+        Svc->>DB: INSERT issued_coupon + issuedQuantity += 1
+        Svc-->>Ctrl: CouponIssueResult
+        Ctrl-->>C: 200 { status: "SUCCESS", issuedAt }
+    end
+```
+
+`@WebMvcTest`를 쓴 이유: `CouponIssueService`/`IssuedCouponRepository`를 `@MockitoBean`으로 대체해 컨트롤러~예외 핸들러 구간만 웹 계층에 실제로 띄워 검증하기 위함이다. `@SpringBootTest`로 전체 컨텍스트를 올리는 것보다 가볍고, DB 상태에 의존하지 않아 테스트가 빠르고 결정적(deterministic)이다.
+
 ## 계획과 다른 점
 
 `@WebMvcTest`를 처음 사용하면서 Spring Boot 4.1.0의 두 가지 구조 변경과 충돌해 계획에 없던 수정이 필요했다.

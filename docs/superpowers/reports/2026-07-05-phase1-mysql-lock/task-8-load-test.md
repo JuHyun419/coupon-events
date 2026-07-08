@@ -11,6 +11,20 @@
 - 실제로 앱을 기동(`docker compose up -d && ./gradlew bootRun`)하고, 관리자 API로 이벤트(`totalQuantity=5000`)를
   생성한 뒤 `EVENT_ID=<id> k6 run load-test/k6/phase1-issue.js`로 부하테스트를 실행해 결과를 관찰함
 
+## 병목 지점
+
+```mermaid
+flowchart LR
+    K6["k6\nconstant-arrival-rate\n100 req/s, 30s"] --> APP["Spring Boot\nTomcat + HikariCP"]
+    APP --> LOCK{"coupon_event row\nFOR UPDATE 락"}
+    LOCK -->|"락 즉시 획득"| FAST["min 4ms / med 8.97ms\n(경합 없을 때)"]
+    LOCK -->|"대기열에 쌓임"| SLOW["p90 678ms / p95 1.04s / max 1.69s\n(경합 있을 때)"]
+    FAST --> DB[("MySQL")]
+    SLOW --> DB
+```
+
+k6의 `constant-arrival-rate` executor는 "초당 100건이 도착해야 한다"는 목표를 맞추기 위해 필요하면 VU를 늘려가며(최대 `maxVUs`) 새 반복을 시작한다. 그런데 이전 반복이 락 대기로 아직 안 끝났으면 그 VU는 응답을 기다리느라 묶여 있고, `preAllocatedVUs`/`maxVUs`로 정한 한도 내에서 새 VU를 더 못 만들면 목표 시각에 새 반복을 아예 시작하지 못한 채 `dropped_iterations`로 집계된다. 즉 이 지표 자체가 "락 대기 때문에 처리 능력이 도착률을 못 따라간다"는 걸 보여주는 신호다.
+
 ## 실측 결과 (2026-07-06)
 
 - 목표: 100 req/s × 30s

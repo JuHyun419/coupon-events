@@ -6,6 +6,45 @@
 - PR: [#1 Phase 1: MySQL 비관적 락 기반 선착순 쿠폰 발급](https://github.com/JuHyun419/coupon-events/pull/1)
 - 이 디렉터리의 문서는 계획서에 있던 Task 1~8을 **실제로 무엇을 했는지, 계획과 무엇이 달랐는지, 검증 결과가 무엇인지** 기준으로 각 Task당 하나의 파일로 정리한 것이다. 계획서 자체(체크박스)는 실행 중 갱신하지 않았으므로 이 문서들이 실행 기록의 유일한 소스다.
 
+## 전체 아키텍처
+
+3계층(controller/application/domain) + 전역 예외 핸들러로 구성된다. `CouponIssueService`만 `SELECT ... FOR UPDATE`로 락을 잡고, 나머지는 평범한 JPA 흐름이다.
+
+```mermaid
+flowchart TB
+    Client(["클라이언트 / k6"])
+
+    subgraph API["api 계층"]
+        AdminCtrl["CouponEventAdminController<br/>/api/admin/coupon-events"]
+        IssueCtrl["CouponIssueController<br/>/api/coupon-events/{eventId}"]
+    end
+
+    subgraph APP["application 계층"]
+        AdminSvc["CouponEventAdminService"]
+        IssueSvc["CouponIssueService<br/>(비관적 락 트랜잭션)"]
+    end
+
+    subgraph DOMAIN["domain 계층 (Spring Data JPA)"]
+        EventRepo["CouponEventRepository<br/>findByIdForUpdate: FOR UPDATE"]
+        CouponRepo["IssuedCouponRepository"]
+    end
+
+    GEH["GlobalExceptionHandler<br/>(@RestControllerAdvice)"]
+    DB[("MySQL<br/>coupon_event / issued_coupon")]
+
+    Client -->|"POST/GET 이벤트 생성·조회"| AdminCtrl --> AdminSvc --> EventRepo
+    Client -->|"POST /issue, GET /status"| IssueCtrl --> IssueSvc
+    IssueSvc --> EventRepo
+    IssueSvc --> CouponRepo
+    EventRepo --> DB
+    CouponRepo --> DB
+    IssueSvc -. "도메인 예외 throw" .-> GEH
+    AdminSvc -. "CouponEventNotFoundException" .-> GEH
+    GEH -. "404/403/409/410 ErrorResponse" .-> Client
+```
+
+각 요소가 실제로 어떻게 동작하는지는 Task별 문서에 더 자세한 시퀀스 다이어그램으로 정리했다 — 발급 로직의 판정 순서는 [Task 5](task-5-issue-service.md), 요청~응답 전체 흐름은 [Task 6](task-6-issue-api.md), 동시성 상황은 [Task 7](task-7-concurrency-test.md) 참고.
+
 ## Task 목록
 
 | Task | 파일 | 커밋 |
