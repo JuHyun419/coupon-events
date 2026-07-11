@@ -2,7 +2,7 @@ package jh.couponevent.coupon.redis.api
 
 import jh.couponevent.coupon.redis.api.dto.CouponEventResponse
 import jh.couponevent.coupon.redis.api.dto.CreateCouponEventRequest
-import jh.couponevent.coupon.redis.application.CouponEventAdminService
+import jh.couponevent.coupon.redis.application.CouponEventAdminServiceV2
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -11,8 +11,8 @@ import kotlin.test.assertEquals
 
 class CouponEventAdminControllerTest {
 
-    private val couponEventAdminService: CouponEventAdminService = mock()
-    private val controller = CouponEventAdminController(couponEventAdminService)
+    private val couponEventAdminService: CouponEventAdminServiceV2 = mock()
+    private val controller = CouponEventAdminControllerV2(couponEventAdminService)
 
     @Test
     fun `이벤트 생성 요청을 서비스로 위임하고 201 응답을 만든다`() {

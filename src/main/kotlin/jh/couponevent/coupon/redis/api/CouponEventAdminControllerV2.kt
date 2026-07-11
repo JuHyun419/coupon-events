@@ -3,7 +3,7 @@ package jh.couponevent.coupon.redis.api
 import jakarta.validation.Valid
 import jh.couponevent.coupon.redis.api.dto.CouponEventResponse
 import jh.couponevent.coupon.redis.api.dto.CreateCouponEventRequest
-import jh.couponevent.coupon.redis.application.CouponEventAdminService
+import jh.couponevent.coupon.redis.application.CouponEventAdminServiceV2
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v2/admin/coupon-events")
-class CouponEventAdminController(
-    private val couponEventAdminService: CouponEventAdminService
+class CouponEventAdminControllerV2(
+    private val couponEventAdminService: CouponEventAdminServiceV2
 ) {
     @PostMapping
     fun create(@Valid @RequestBody request: CreateCouponEventRequest): ResponseEntity<CouponEventResponse> =

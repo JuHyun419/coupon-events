@@ -27,7 +27,7 @@ class CouponIssueServiceTest {
     private val issuedCouponRepository: IssuedCouponRepository = mock()
     private val couponRedisIssuer: CouponRedisIssuer = mock()
     private val fixedClock: Clock = Clock.fixed(Instant.parse("2026-07-11T10:00:00Z"), ZoneOffset.UTC)
-    private val service = CouponIssueService(couponEventRepository, issuedCouponRepository, couponRedisIssuer, fixedClock)
+    private val service = CouponIssueServiceV2(couponEventRepository, issuedCouponRepository, couponRedisIssuer, fixedClock)
 
     private fun eventWithId(
         id: Long = 1L,

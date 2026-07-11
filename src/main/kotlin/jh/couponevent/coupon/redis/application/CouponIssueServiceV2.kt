@@ -19,7 +19,7 @@ data class CouponIssueResult(
 )
 
 @Service
-class CouponIssueService(
+class CouponIssueServiceV2(
     private val couponEventRepository: CouponEventRepository,
     private val issuedCouponRepository: IssuedCouponRepository,
     private val couponRedisIssuer: CouponRedisIssuer,
