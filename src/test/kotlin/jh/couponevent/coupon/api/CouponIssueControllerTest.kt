@@ -33,7 +33,7 @@ class CouponIssueControllerTest @Autowired constructor(
     fun `재고가 소진되면 410 GONE과 SOLD_OUT 상태를 반환한다`() {
         whenever(couponIssueService.issue(any(), any())).thenThrow(CouponSoldOutException(1L))
 
-        mockMvc.post("/api/coupon-events/1/issue") {
+        mockMvc.post("/api/v1/coupon-events/1/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(CouponIssueRequest(userId = 100L))
         }.andExpect {
@@ -48,7 +48,7 @@ class CouponIssueControllerTest @Autowired constructor(
         whenever(couponIssueService.issue(any(), any()))
             .thenReturn(CouponIssueResult(eventId = 1L, userId = 100L, issuedAt = issuedAt))
 
-        mockMvc.post("/api/coupon-events/1/issue") {
+        mockMvc.post("/api/v1/coupon-events/1/issue") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(CouponIssueRequest(userId = 100L))
         }.andExpect {

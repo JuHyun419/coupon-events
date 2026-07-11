@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/coupon-events/{eventId}")
+@RequestMapping("/api/v1/coupon-events/{eventId}")
 class CouponIssueController(
     private val couponIssueService: CouponIssueService,
     private val issuedCouponRepository: IssuedCouponRepository

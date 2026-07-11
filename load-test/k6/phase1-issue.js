@@ -22,7 +22,7 @@ export default function () {
   const payload = JSON.stringify({ userId });
   const params = { headers: { 'Content-Type': 'application/json' } };
 
-  const res = http.post(`${BASE_URL}/api/coupon-events/${EVENT_ID}/issue`, payload, params);
+  const res = http.post(`${BASE_URL}/api/v1/coupon-events/${EVENT_ID}/issue`, payload, params);
 
   check(res, {
     'status is 200, 409, or 410': (r) => [200, 409, 410].includes(r.status),

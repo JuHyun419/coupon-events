@@ -5,7 +5,7 @@
 1. `docker compose up -d && ./gradlew bootRun`
 2. 테스트용 이벤트 생성 (재고를 넉넉히 잡아 품절이 아닌 락 경합을 관찰):
    ```bash
-   curl -X POST http://localhost:8080/api/admin/coupon-events \
+   curl -X POST http://localhost:8080/api/v1/admin/coupon-events \
      -H "Content-Type: application/json" \
      -d '{"name":"phase1-load-test","totalQuantity":5000,"startAt":"2020-01-01T00:00:00"}'
    ```
