@@ -842,15 +842,17 @@ git commit -m "Add v2 CouponIssueService using Redis Lua for atomic issuance"
 
 ---
 
-### Task 7: v2 쿠폰 발급 API (CouponIssueController)
+### Task 7: v2 쿠폰 발급 API (CouponIssueControllerV2)
+
+> **Amendment (2026-07-11, post Task 6 review):** Task 5/6에서 만든 `CouponEventAdminController`/`CouponEventAdminService`/`CouponIssueService`(v2, `jh.couponevent.coupon.redis.*`)가 v1의 동일한 단순 클래스명과 충돌해 Spring이 `ConflictingBeanDefinitionException`을 던지는 버그가 전체 테스트 스위트 실행에서 발견됐다(패키지가 달라도 Spring의 기본 빈 이름은 단순 클래스명 기준이라 패키지로는 구분되지 않음). Task 5/6의 해당 클래스들은 `...V2` 접미사로 이미 리네임되었다(`CouponEventAdminControllerV2`, `CouponEventAdminServiceV2`, `CouponIssueServiceV2`). 이 Task 7도 동일한 충돌을 피하기 위해 컨트롤러를 `CouponIssueControllerV2`로 만든다 — 아래 코드는 이를 반영해 갱신됨.
 
 **Files:**
 - Create: `src/main/kotlin/jh/couponevent/coupon/redis/api/dto/CouponIssueDto.kt`
-- Create: `src/main/kotlin/jh/couponevent/coupon/redis/api/CouponIssueController.kt`
-- Test: `src/test/kotlin/jh/couponevent/coupon/redis/api/CouponIssueControllerTest.kt`
+- Create: `src/main/kotlin/jh/couponevent/coupon/redis/api/CouponIssueControllerV2.kt`
+- Test: `src/test/kotlin/jh/couponevent/coupon/redis/api/CouponIssueControllerV2Test.kt`
 
 **Interfaces:**
-- Consumes: Task 6의 `CouponIssueService.issue(...)`, `IssuedCouponRepository`(공유), `jh.couponevent.common.GlobalExceptionHandler`(공유, Task 4에서 확장됨)
+- Consumes: Task 6의 `CouponIssueServiceV2.issue(...)`, `IssuedCouponRepository`(공유), `jh.couponevent.common.GlobalExceptionHandler`(공유, Task 4에서 확장됨)
 - Produces:
   - `POST /api/v2/coupon-events/{eventId}/issue` → 200 `CouponIssueResponse` / 403 / 404 / 409 / 410 / 500
   - `GET /api/v2/coupon-events/{eventId}/users/{userId}/status` → 200 `CouponStatusResponse`
@@ -888,7 +890,7 @@ import jh.couponevent.coupon.domain.IssuedCouponRepository
 import jh.couponevent.coupon.redis.api.dto.CouponIssueRequest
 import jh.couponevent.coupon.redis.api.dto.CouponIssueResponse
 import jh.couponevent.coupon.redis.api.dto.CouponStatusResponse
-import jh.couponevent.coupon.redis.application.CouponIssueService
+import jh.couponevent.coupon.redis.application.CouponIssueServiceV2
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -898,8 +900,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v2/coupon-events/{eventId}")
-class CouponIssueController(
-    private val couponIssueService: CouponIssueService,
+class CouponIssueControllerV2(
+    private val couponIssueService: CouponIssueServiceV2,
     private val issuedCouponRepository: IssuedCouponRepository
 ) {
     @PostMapping("/issue")
@@ -924,7 +926,7 @@ package jh.couponevent.coupon.redis.api
 import jh.couponevent.coupon.exception.CouponSoldOutException
 import jh.couponevent.coupon.redis.api.dto.CouponIssueRequest
 import jh.couponevent.coupon.redis.application.CouponIssueResult
-import jh.couponevent.coupon.redis.application.CouponIssueService
+import jh.couponevent.coupon.redis.application.CouponIssueServiceV2
 import jh.couponevent.coupon.domain.IssuedCouponRepository
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -938,12 +940,12 @@ import org.springframework.test.web.servlet.post
 import tools.jackson.databind.ObjectMapper
 import java.time.LocalDateTime
 
-@WebMvcTest(CouponIssueController::class)
-class CouponIssueControllerTest @Autowired constructor(
+@WebMvcTest(CouponIssueControllerV2::class)
+class CouponIssueControllerV2Test @Autowired constructor(
     private val mockMvc: MockMvc
 ) {
     @MockitoBean
-    private lateinit var couponIssueService: CouponIssueService
+    private lateinit var couponIssueService: CouponIssueServiceV2
 
     @MockitoBean
     private lateinit var issuedCouponRepository: IssuedCouponRepository
@@ -982,20 +984,20 @@ class CouponIssueControllerTest @Autowired constructor(
 
 - [ ] **Step 4: 테스트 실행 및 통과 확인**
 
-Run: `./gradlew test --tests "jh.couponevent.coupon.redis.api.CouponIssueControllerTest"`
+Run: `./gradlew test --tests "jh.couponevent.coupon.redis.api.CouponIssueControllerV2Test"`
 Expected: `BUILD SUCCESSFUL`, 2 tests passed
 
-- [ ] **Step 5: 전체 테스트 스위트 실행**
+- [ ] **Step 5: 전체 테스트 스위트 실행 (v1/v2 빈 이름 충돌 등 컨텍스트 로딩 문제가 없는지 반드시 확인)**
 
 Run: `./gradlew test`
-Expected: `BUILD SUCCESSFUL`
+Expected: `BUILD SUCCESSFUL`, 모든 테스트 통과 (특히 `CouponEventApplicationTests.contextLoads()`와 `@SpringBootTest` 기반 테스트들이 빈 이름 충돌 없이 컨텍스트를 띄우는지)
 
 - [ ] **Step 6: 커밋**
 
 ```bash
 git add src/main/kotlin/jh/couponevent/coupon/redis/api/dto/CouponIssueDto.kt \
-        src/main/kotlin/jh/couponevent/coupon/redis/api/CouponIssueController.kt \
-        src/test/kotlin/jh/couponevent/coupon/redis/api/CouponIssueControllerTest.kt
+        src/main/kotlin/jh/couponevent/coupon/redis/api/CouponIssueControllerV2.kt \
+        src/test/kotlin/jh/couponevent/coupon/redis/api/CouponIssueControllerV2Test.kt
 git commit -m "Add v2 coupon issue API endpoint"
 ```
 
@@ -1007,7 +1009,7 @@ git commit -m "Add v2 coupon issue API endpoint"
 - Test: `src/test/kotlin/jh/couponevent/coupon/redis/application/CouponIssueConcurrencyTest.kt`
 
 **Interfaces:**
-- Consumes: Task 6의 `CouponIssueService.issue(...)`, `CouponEventRepository`(공유), Task 3의 `CouponRedisIssuer`, `IssuedCouponRepository`(공유) — `@SpringBootTest`로 전체 컨텍스트를 띄워 실제 빈 사용
+- Consumes: Task 6의 `CouponIssueServiceV2.issue(...)`, `CouponEventRepository`(공유), Task 3의 `CouponRedisIssuer`, `IssuedCouponRepository`(공유) — `@SpringBootTest`로 전체 컨텍스트를 띄워 실제 빈 사용
 - Produces: 없음 (검증 전용 테스트)
 
 - [ ] **Step 1: MySQL과 Redis가 떠 있는지 확인한다**
@@ -1035,7 +1037,7 @@ import kotlin.test.assertEquals
 
 @SpringBootTest
 class CouponIssueConcurrencyTest @Autowired constructor(
-    private val couponIssueService: CouponIssueService,
+    private val couponIssueService: CouponIssueServiceV2,
     private val couponEventRepository: CouponEventRepository,
     private val couponRedisIssuer: CouponRedisIssuer,
     private val issuedCouponRepository: IssuedCouponRepository
