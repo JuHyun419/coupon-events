@@ -44,7 +44,7 @@ class CouponIssueService(
             issuedCouponRepository.save(IssuedCoupon(couponEventId = eventId, userId = userId, issuedAt = now))
         } catch (e: Exception) {
             couponRedisIssuer.rollback(eventId, userId)
-            throw CouponIssuePersistenceFailedException(eventId, userId)
+            throw CouponIssuePersistenceFailedException(eventId, userId, cause = e)
         }
 
         return CouponIssueResult(eventId, userId, now)
