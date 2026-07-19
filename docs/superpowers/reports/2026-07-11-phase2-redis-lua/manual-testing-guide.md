@@ -9,6 +9,11 @@ docker compose up -d       # MySQL + Redis 기동
 ./gradlew bootRun          # 별도 터미널에서 앱 기동 (포트 8080)
 ```
 
+앱이 뜬 걸 확인:
+```bash
+curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:8080/api/v2/admin/coupon-events
+```
+
 ## 1. v2 이벤트 생성 (재고 3개)
 
 ```bash
