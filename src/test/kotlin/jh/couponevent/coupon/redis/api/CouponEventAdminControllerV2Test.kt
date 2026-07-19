@@ -9,7 +9,7 @@ import org.mockito.kotlin.whenever
 import java.time.LocalDateTime
 import kotlin.test.assertEquals
 
-class CouponEventAdminControllerTest {
+class CouponEventAdminControllerV2Test {
 
     private val couponEventAdminService: CouponEventAdminServiceV2 = mock()
     private val controller = CouponEventAdminControllerV2(couponEventAdminService)

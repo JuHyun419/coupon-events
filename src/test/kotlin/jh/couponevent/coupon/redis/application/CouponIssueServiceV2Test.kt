@@ -21,7 +21,7 @@ import java.time.ZoneOffset
 import java.util.Optional
 import kotlin.test.assertEquals
 
-class CouponIssueServiceTest {
+class CouponIssueServiceV2Test {
 
     private val couponEventRepository: CouponEventRepository = mock()
     private val issuedCouponRepository: IssuedCouponRepository = mock()
