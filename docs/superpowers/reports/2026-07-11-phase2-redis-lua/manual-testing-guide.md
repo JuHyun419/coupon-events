@@ -1,6 +1,6 @@
 # 수동 테스트 가이드 (Phase 2 — Redis Lua Script)
 
-Phase 1(`/api/v1/...`, MySQL 락)과 Phase 2(`/api/v2/...`, Redis Lua)를 나란히 호출해서 차이를 직접 비교해볼 수 있는 가이드다.
+Phase 1(`/api/v1/...`, MySQL 락)과 Phase 2(`/api/v2/...`, Redis Lua)를 나란히 호출해서 차이를 직접 비교해볼 수 있는 가이드다. 아키텍처/요청 흐름 다이어그램은 [00-summary.md](00-summary.md) 참고.
 
 ## 사전 준비
 
