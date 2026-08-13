@@ -8,3 +8,9 @@ class CouponSoldOutException(eventId: Long) : RuntimeException("Coupon event sol
 
 class DuplicateCouponIssueException(eventId: Long, userId: Long) :
     RuntimeException("User $userId already issued a coupon for event $eventId")
+
+class CouponIssuePersistenceFailedException(eventId: Long, userId: Long, cause: Throwable? = null) :
+    RuntimeException(
+        "Failed to persist issued coupon for event $eventId, user $userId after Redis stock was decremented",
+        cause
+    )

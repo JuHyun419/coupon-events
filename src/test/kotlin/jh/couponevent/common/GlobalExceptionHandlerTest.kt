@@ -2,6 +2,7 @@ package jh.couponevent.common
 
 import jh.couponevent.coupon.exception.CouponSoldOutException
 import jh.couponevent.coupon.exception.DuplicateCouponIssueException
+import jh.couponevent.coupon.exception.CouponIssuePersistenceFailedException
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
 import kotlin.test.assertEquals
@@ -23,5 +24,13 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.CONFLICT, response.statusCode)
         assertEquals("DUPLICATE", response.body?.status)
+    }
+
+    @Test
+    fun `영속화 실패 예외는 500 INTERNAL_SERVER_ERROR, ISSUE_PERSISTENCE_FAILED 상태로 매핑된다`() {
+        val response = handler.handlePersistenceFailure(CouponIssuePersistenceFailedException(1L, 100L))
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.statusCode)
+        assertEquals("ISSUE_PERSISTENCE_FAILED", response.body?.status)
     }
 }
