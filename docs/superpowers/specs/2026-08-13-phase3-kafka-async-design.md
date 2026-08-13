@@ -40,11 +40,13 @@ POST /api/v3/coupon-events/{eventId}/issue
 
 `GlobalExceptionHandler`에 `CouponIssuePublishFailedException` 처리 핸들러를 하나 추가한다(Phase 2의 `handlePersistenceFailure`와 나란히, 새 핸들러 클래스는 만들지 않는다).
 
+**알려진 한계 — 발행 타임아웃과 롤백 사이의 레이스**: `.get(timeout)`이 타임아웃으로 실패해도 이는 애플리케이션 스레드가 기다리기를 포기했다는 뜻일 뿐, Kafka 브로커에 대한 실제 프로듀서 요청 자체를 취소하지는 않는다. 즉 타임아웃 이후에 브로커가 실제로는 메시지를 정상 적재할 수 있다 — 이 경우 애플리케이션은 이미 500 응답과 함께 Redis를 롤백(`INCR`+`SREM`)했지만, 컨슈머는 그 메시지를 정상적으로 읽어 DB에 row를 반영한다. 결과적으로 "Redis 기준으로는 발급되지 않았는데 DB에는 발급 기록이 존재"하는 상태가 영구적으로 남을 수 있다(사용자 입장에서는 500을 받았지만 실제로는 쿠폰을 보유). 이는 "동기 발행 + 타임아웃 기반 롤백" 패턴이 근본적으로 안고 있는 at-least-once/타임아웃 레이스이며, 이 프로젝트 범위(로컬 학습 환경, 8장 "범위 밖" 참고)에서는 코드로 완전히 막지 않고 알려진 한계로 문서화하는 것으로 대응한다. 프로덕션이라면 프로듀서 idempotence 설정과 별도의 정합성 배치 검증(Redis-DB 대사) 등이 추가로 필요하다.
+
 ## 4. Consumer — 배치 영속화
 
 - Spring Kafka 배치 리스너를 사용한다: `spring.kafka.listener.type=batch`, `concurrency=3`(파티션 수와 매칭해 파티션당 컨슈머 스레드 1개)
 - `spring.kafka.consumer.max-poll-records=500`, `fetch.max.wait.ms=200`으로 상위 설계문서의 "500건 또는 200ms 윈도우" 배치 조건을 Kafka 표준 파라미터로 근사한다.
-- 리스너는 poll로 받은 `List<ConsumerRecord<String, String>>`을 `IssuedCoupon` 엔티티 리스트로 변환해 `issuedCouponRepository.saveAll(...)`로 배치 insert한 뒤, 성공 시 수동 `Acknowledgment.acknowledge()`를 호출한다(자동 커밋 사용 안 함 — insert 실패 시 재처리되도록).
+- 리스너는 poll로 받은 `List<ConsumerRecord<String, String>>`을 `IssuedCoupon` 엔티티 리스트로 변환해 `issuedCouponRepository.saveAll(...)`을 호출한 뒤, 성공 시 수동 `Acknowledgment.acknowledge()`를 호출한다(자동 커밋 사용 안 함 — insert 실패 시 재처리되도록). **정정**: `IssuedCoupon`이 `GenerationType.IDENTITY`를 쓰기 때문에 Hibernate는 `saveAll(...)` 안에서도 각 row를 즉시 개별 INSERT해야 하고(ID를 미리 알 수 없어 JDBC 배치를 비활성화함), `hibernate.jdbc.batch_size` 설정도 없다 — 따라서 실제로는 "배치 insert"가 아니라 "한 트랜잭션 안에서 여러 건을 순차 INSERT"하는 것에 가깝다. 이번 실측(부하테스트 결과 참고)에서는 컨슈머가 병목이 아니었으므로 성능에 영향은 없었지만, 용어는 정확히 해둔다.
 - **at-least-once 재처리 대비**: 컨슈머 재시작/리밸런스로 동일 메시지가 재처리될 수 있다. `issued_coupon.uk_event_user` UNIQUE 제약이 최종 방어선이며, 배치 insert 중 일부 row가 이미 존재해 실패하면 해당 배치는 1건씩 재시도(save)하여 나머지 정상 row는 반영되도록 한다(전체 배치 롤백 방지).
 
 ## 5. 상태 조회 API — 비동기 지연을 직접 관찰하는 용도
