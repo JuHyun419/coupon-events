@@ -5,6 +5,7 @@ import jh.couponevent.coupon.exception.CouponEventNotOpenException
 import jh.couponevent.coupon.exception.CouponSoldOutException
 import jh.couponevent.coupon.exception.DuplicateCouponIssueException
 import jh.couponevent.coupon.exception.CouponIssuePersistenceFailedException
+import jh.couponevent.coupon.exception.CouponIssuePublishFailedException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -35,4 +36,9 @@ class GlobalExceptionHandler {
     fun handlePersistenceFailure(e: CouponIssuePersistenceFailedException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ErrorResponse("ISSUE_PERSISTENCE_FAILED", e.message.orEmpty()))
+
+    @ExceptionHandler(CouponIssuePublishFailedException::class)
+    fun handlePublishFailure(e: CouponIssuePublishFailedException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ErrorResponse("ISSUE_PUBLISH_FAILED", e.message.orEmpty()))
 }

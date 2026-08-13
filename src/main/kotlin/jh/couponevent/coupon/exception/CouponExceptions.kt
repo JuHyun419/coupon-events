@@ -14,3 +14,9 @@ class CouponIssuePersistenceFailedException(eventId: Long, userId: Long, cause: 
         "Failed to persist issued coupon for event $eventId, user $userId after Redis stock was decremented",
         cause
     )
+
+class CouponIssuePublishFailedException(eventId: Long, userId: Long, cause: Throwable? = null) :
+    RuntimeException(
+        "Failed to publish issued coupon event for event $eventId, user $userId after Redis stock was decremented",
+        cause
+    )
