@@ -12,11 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 class CouponIssueConcurrencyV3Test @Autowired constructor(
@@ -44,12 +46,14 @@ class CouponIssueConcurrencyV3Test @Autowired constructor(
         val latch = CountDownLatch(requestCount)
         val successCount = AtomicInteger(0)
         val failCount = AtomicInteger(0)
+        val succeededUserIds = ConcurrentHashMap.newKeySet<Long>()
 
         (1..requestCount).forEach { userId ->
             executor.submit {
                 try {
                     couponIssueService.issue(eventId, userId.toLong())
                     successCount.incrementAndGet()
+                    succeededUserIds.add(userId.toLong())
                 } catch (e: Exception) {
                     failCount.incrementAndGet()
                 } finally {
@@ -57,8 +61,9 @@ class CouponIssueConcurrencyV3Test @Autowired constructor(
                 }
             }
         }
-        latch.await(30, TimeUnit.SECONDS)
+        val completed = latch.await(30, TimeUnit.SECONDS)
         executor.shutdown()
+        assertTrue(completed, "burst did not complete within 30s timeout")
 
         // Redis 차감은 동기적이므로 요청이 끝난 시점에 이미 확정되어 있다.
         assertEquals(totalQuantity, successCount.get())
@@ -70,7 +75,7 @@ class CouponIssueConcurrencyV3Test @Autowired constructor(
             assertEquals(totalQuantity.toLong(), issuedCouponRepository.countByCouponEventId(eventId))
         }
 
-        val completedStatus = couponIssueService.status(eventId, 1L)
+        val completedStatus = couponIssueService.status(eventId, succeededUserIds.first())
         assertEquals(CouponIssueStatus.COMPLETED, completedStatus.status)
     }
 }
