@@ -23,8 +23,8 @@ class IssuedCouponBatchConsumer(
         try {
             issuedCouponRepository.saveAll(coupons)
         } catch (e: DataIntegrityViolationException) {
-            coupons.forEach { coupon ->
-                runCatching { issuedCouponRepository.save(coupon) }
+            records.forEach { record ->
+                runCatching { issuedCouponRepository.save(record.toIssuedCoupon()) }
             }
         }
         ack.acknowledge()

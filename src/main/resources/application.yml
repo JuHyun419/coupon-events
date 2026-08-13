@@ -22,6 +22,8 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        max.block.ms: 3000
     consumer:
       group-id: coupon-issue-consumer
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer

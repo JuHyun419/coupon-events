@@ -22,8 +22,8 @@ class CouponIssueEventPublisher(
     private val objectMapper = ObjectMapper()
 
     fun publish(eventId: Long, userId: Long, issuedAt: LocalDateTime) {
-        val payload = objectMapper.writeValueAsString(CouponIssueEvent(eventId, userId, issuedAt))
         try {
+            val payload = objectMapper.writeValueAsString(CouponIssueEvent(eventId, userId, issuedAt))
             kafkaTemplate.send(COUPON_ISSUE_TOPIC, userId.toString(), payload)
                 .get(3, TimeUnit.SECONDS)
         } catch (e: Exception) {
