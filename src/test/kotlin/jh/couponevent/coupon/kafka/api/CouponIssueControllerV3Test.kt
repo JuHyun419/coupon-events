@@ -4,6 +4,8 @@ import jh.couponevent.coupon.exception.CouponSoldOutException
 import jh.couponevent.coupon.kafka.api.dto.CouponIssueRequestV3
 import jh.couponevent.coupon.kafka.application.CouponIssueAcceptedResult
 import jh.couponevent.coupon.kafka.application.CouponIssueServiceV3
+import jh.couponevent.coupon.kafka.application.CouponIssueStatus
+import jh.couponevent.coupon.kafka.application.CouponStatusResponseV3
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
@@ -12,6 +14,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import tools.jackson.databind.ObjectMapper
 import java.time.LocalDateTime
@@ -50,6 +53,18 @@ class CouponIssueControllerV3Test @Autowired constructor(
         }.andExpect {
             status { isOk() }
             jsonPath("$.status") { value("SUCCESS") }
+        }
+    }
+
+    @Test
+    fun `상태 조회는 서비스 결과를 그대로 응답한다`() {
+        whenever(couponIssueService.status(1L, 100L)).thenReturn(
+            CouponStatusResponseV3(eventId = 1L, userId = 100L, status = CouponIssueStatus.PENDING, issuedAt = null)
+        )
+
+        mockMvc.get("/api/v3/coupon-events/1/users/100/status").andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("PENDING") }
         }
     }
 }

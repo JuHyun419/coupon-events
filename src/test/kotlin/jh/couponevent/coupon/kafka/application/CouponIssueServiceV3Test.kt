@@ -2,6 +2,8 @@ package jh.couponevent.coupon.kafka.application
 
 import jh.couponevent.coupon.domain.CouponEvent
 import jh.couponevent.coupon.domain.CouponEventRepository
+import jh.couponevent.coupon.domain.IssuedCoupon
+import jh.couponevent.coupon.domain.IssuedCouponRepository
 import jh.couponevent.coupon.exception.CouponEventNotFoundException
 import jh.couponevent.coupon.exception.CouponEventNotOpenException
 import jh.couponevent.coupon.exception.CouponIssuePublishFailedException
@@ -28,8 +30,10 @@ class CouponIssueServiceV3Test {
     private val couponRedisIssuer: CouponRedisIssuer = mock()
     private val couponIssueEventPublisher: CouponIssueEventPublisher = mock()
     private val fixedClock: Clock = Clock.fixed(Instant.parse("2026-08-13T10:00:00Z"), ZoneOffset.UTC)
-    private val service =
-        CouponIssueServiceV3(couponEventRepository, couponRedisIssuer, couponIssueEventPublisher, fixedClock)
+    private val issuedCouponRepository: IssuedCouponRepository = mock()
+    private val service = CouponIssueServiceV3(
+        couponEventRepository, couponRedisIssuer, couponIssueEventPublisher, issuedCouponRepository, fixedClock
+    )
 
     private fun eventWithId(
         id: Long = 1L,
@@ -92,5 +96,38 @@ class CouponIssueServiceV3Test {
         assertThrows<CouponIssuePublishFailedException> { service.issue(1L, 100L) }
 
         verify(couponRedisIssuer).rollback(1L, 100L)
+    }
+
+    @Test
+    fun `DB에 row가 있으면 COMPLETED를 반환한다`() {
+        val issuedAt = LocalDateTime.of(2026, 8, 13, 10, 0)
+        val coupon = IssuedCoupon(couponEventId = 1L, userId = 100L, issuedAt = issuedAt)
+        whenever(issuedCouponRepository.findByCouponEventIdAndUserId(1L, 100L)).thenReturn(coupon)
+
+        val result = service.status(1L, 100L)
+
+        assertEquals(CouponIssueStatus.COMPLETED, result.status)
+        assertEquals(issuedAt, result.issuedAt)
+    }
+
+    @Test
+    fun `DB에는 없지만 Redis에는 있으면 PENDING을 반환한다`() {
+        whenever(issuedCouponRepository.findByCouponEventIdAndUserId(1L, 100L)).thenReturn(null)
+        whenever(couponRedisIssuer.isIssuedInRedis(1L, 100L)).thenReturn(true)
+
+        val result = service.status(1L, 100L)
+
+        assertEquals(CouponIssueStatus.PENDING, result.status)
+        assertEquals(null, result.issuedAt)
+    }
+
+    @Test
+    fun `DB와 Redis 어디에도 없으면 NOT_ISSUED를 반환한다`() {
+        whenever(issuedCouponRepository.findByCouponEventIdAndUserId(1L, 100L)).thenReturn(null)
+        whenever(couponRedisIssuer.isIssuedInRedis(1L, 100L)).thenReturn(false)
+
+        val result = service.status(1L, 100L)
+
+        assertEquals(CouponIssueStatus.NOT_ISSUED, result.status)
     }
 }

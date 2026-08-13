@@ -54,6 +54,14 @@ class CouponRedisIssuerTest {
         assertEquals(CouponIssueLuaResult.SUCCESS, issuer.tryIssue(TEST_EVENT_ID, 1L))
     }
 
+    @Test
+    fun `isIssuedInRedis는 발급자 Set에 있는 사용자만 true를 반환한다`() {
+        issuer.tryIssue(TEST_EVENT_ID, 1L)
+
+        assertEquals(true, issuer.isIssuedInRedis(TEST_EVENT_ID, 1L))
+        assertEquals(false, issuer.isIssuedInRedis(TEST_EVENT_ID, 2L))
+    }
+
     companion object {
         private const val TEST_EVENT_ID = 999_999L
     }

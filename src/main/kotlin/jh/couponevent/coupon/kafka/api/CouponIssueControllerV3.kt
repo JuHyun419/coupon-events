@@ -4,6 +4,8 @@ import jakarta.validation.Valid
 import jh.couponevent.coupon.kafka.api.dto.CouponIssueAcceptedResponse
 import jh.couponevent.coupon.kafka.api.dto.CouponIssueRequestV3
 import jh.couponevent.coupon.kafka.application.CouponIssueServiceV3
+import jh.couponevent.coupon.kafka.application.CouponStatusResponseV3
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -23,4 +25,8 @@ class CouponIssueControllerV3(
         val result = couponIssueService.issue(eventId, request.userId)
         return CouponIssueAcceptedResponse(status = "SUCCESS", issuedAt = result.issuedAt)
     }
+
+    @GetMapping("/users/{userId}/status")
+    fun status(@PathVariable eventId: Long, @PathVariable userId: Long): CouponStatusResponseV3 =
+        couponIssueService.status(eventId, userId)
 }

@@ -36,6 +36,9 @@ class CouponRedisIssuer(
     fun remainingStock(eventId: Long): Int =
         redisTemplate.opsForValue().get(stockKey(eventId))?.toInt() ?: 0
 
+    fun isIssuedInRedis(eventId: Long, userId: Long): Boolean =
+        redisTemplate.opsForSet().isMember(issuedUsersKey(eventId), userId.toString()) ?: false
+
     private fun stockKey(eventId: Long) = "coupon:$eventId:stock"
 
     private fun issuedUsersKey(eventId: Long) = "coupon:$eventId:issued_users"
