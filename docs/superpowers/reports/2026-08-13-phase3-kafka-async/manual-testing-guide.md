@@ -1,6 +1,6 @@
 # 수동 테스트 가이드 (Phase 3 — Redis + Kafka 비동기 영속화)
 
-Phase 2(`/api/v2/...`, Redis 동기 차감 + 동기 DB insert)와 Phase 3(`/api/v3/...`, Redis 동기 차감 + Kafka 비동기 DB 반영)를 나란히 호출해서, "응답은 즉시 오지만 DB 반영은 잠시 후"라는 최종 정합성을 직접 눈으로 확인해보는 가이드다.
+Phase 2(`/api/v2/...`, Redis 동기 차감 + 동기 DB insert)와 Phase 3(`/api/v3/...`, Redis 동기 차감 + Kafka 비동기 DB 반영)를 나란히 호출해서, "응답은 즉시 오지만 DB 반영은 잠시 후"라는 최종 정합성을 직접 눈으로 확인해보는 가이드다. 아키텍처/요청 흐름 다이어그램은 [00-summary.md](00-summary.md) 참고.
 
 ## 사전 준비
 
