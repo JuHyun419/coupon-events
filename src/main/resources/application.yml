@@ -17,3 +17,15 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
