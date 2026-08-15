@@ -37,6 +37,11 @@ spring:
       concurrency: 3
       ack-mode: manual
 
+server:
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
 management:
   endpoints:
     web:
