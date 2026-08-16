@@ -86,5 +86,18 @@ services:
       kafka:
         condition: service_healthy
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: coupon-event-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
 volumes:
   mysql-data:
