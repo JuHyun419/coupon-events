@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: coupon-event
+    orgId: 1
+    folder: "coupon-event"
+    type: file
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/provisioning/dashboards
