@@ -33,6 +33,10 @@ services:
     container_name: coupon-event-kafka
     ports:
       - "9092:9092"
+    # Two Kafka listeners: PLAINTEXT (advertised as localhost:9092) is for host
+    # processes like `./gradlew bootRun`. DOCKER (advertised as kafka:29092) is
+    # for clients inside the compose network (the containerized app, kafka-exporter).
+    # Do not collapse these back to one listener — see Task 4 of the monitoring plan.
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -54,10 +58,17 @@ services:
   app:
     build: .
     container_name: coupon-event-app
+    profiles: ["monitoring"]
     environment:
       SPRING_PROFILES_ACTIVE: docker
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
     depends_on:
       mysql:
         condition: service_healthy
@@ -69,16 +80,19 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: coupon-event-prometheus
+    profiles: ["monitoring"]
     ports:
       - "9090:9090"
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
-      - app
+      app:
+        condition: service_healthy
 
   kafka-exporter:
     image: danielqsj/kafka-exporter:latest
     container_name: coupon-event-kafka-exporter
+    profiles: ["monitoring"]
     command: ["--kafka.server=kafka:29092"]
     ports:
       - "9308:9308"
@@ -89,6 +103,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: coupon-event-grafana
+    profiles: ["monitoring"]
     ports:
       - "3000:3000"
     environment:

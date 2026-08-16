@@ -5,7 +5,7 @@ Prometheus + Grafana로 앱의 내부 상태(HikariCP/Tomcat 풀, HTTP 처리량
 ## 1. 전체 스택 기동
 
 ```bash
-docker compose up -d --build
+docker compose --profile monitoring up -d --build
 sleep 30
 docker compose ps
 ```

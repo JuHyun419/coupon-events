@@ -88,6 +88,9 @@ server:
     container_name: coupon-event-grafana
     ports:
       - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
     volumes:
       - ./docker/grafana/provisioning:/etc/grafana/provisioning
     depends_on:
@@ -96,7 +99,7 @@ server:
   kafka-exporter:
     image: danielqsj/kafka-exporter:latest
     container_name: coupon-event-kafka-exporter
-    command: ["--kafka.server=kafka:9092"]
+    command: ["--kafka.server=kafka:29092"]
     ports:
       - "9308:9308"
     depends_on:
@@ -104,6 +107,10 @@ server:
 ```
 
 `docker/prometheus/prometheus.yml`은 `app:8080/actuator/prometheus`와 `kafka-exporter:9308/metrics`를 스크레이핑 타깃으로 등록한다(컨테이너 네트워크 안에서는 서비스명으로 서로를 찾으므로 `host.docker.internal`이 필요 없다 — app도 같은 docker-compose 네트워크 안에 있기 때문).
+
+Kafka에는 리스너가 두 개다: 호스트 프로세스(`./gradlew bootRun`)용 `PLAINTEXT`(광고 주소 `localhost:9092`)와, compose 네트워크 안의 컨테이너 클라이언트(컨테이너화된 app, kafka-exporter)용 `DOCKER`(광고 주소 `kafka:29092`)다. 위 `kafka-exporter`의 `--kafka.server`가 `kafka:29092`인 이유가 이것이다 — `kafka:9092`로 쓰면 호스트 전용 리스너로 잘못 연결을 시도하게 되어 동작하지 않는다.
+
+`GF_AUTH_ANONYMOUS_ENABLED`는 로컬 학습 환경에서 로그인 없이 바로 대시보드를 보기 위한 설정이다 — 운영 환경이라면 절대 쓰면 안 되지만, 이 프로젝트는 로컬 전용이므로 편의를 우선한다. **단, 7장에서 확인했듯 이 스택은 "로컬이든 클라우드 VM이든" 동일하게 띄울 수 있어야 한다는 요구사항도 있다 — 만약 실제로 클라우드 VM에 배포한다면, 익명 Grafana 관리자 접근·인증 없는 Prometheus(전체 쿼리 + admin API)·인증 없는 `/actuator/*` 엔드포인트가 그대로 공인 인터넷에 노출되므로, 배포 전에 반드시 이를 잠가야 한다(해당 포트를 제한하는 방화벽 규칙 적용, 또는 실제 인증 활성화 등) — 현재 설정은 이를 처리하지 않으며, 로컬 전제가 깨지면 실질적인 노출 위험이 된다.**
 
 ## 4. Dockerfile (앱 컨테이너화)
 

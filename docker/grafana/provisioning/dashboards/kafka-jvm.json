@@ -16,7 +16,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "kafka_consumergroup_lag{consumergroup=\"coupon-issue-consumer\"}",
+          "expr": "kafka_consumergroup_lag{consumergroup=\"coupon-issue-consumer\"} >= 0",
           "legendFormat": "partition {{partition}}",
           "refId": "A"
         }
