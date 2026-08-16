@@ -76,5 +76,15 @@ services:
     depends_on:
       - app
 
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: coupon-event-kafka-exporter
+    command: ["--kafka.server=kafka:29092"]
+    ports:
+      - "9308:9308"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
 volumes:
   mysql-data:
