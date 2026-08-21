@@ -1,0 +1,46 @@
+{
+  "uid": "kafka-jvm",
+  "title": "coupon-event: Kafka Lag & JVM",
+  "tags": ["coupon-event"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Kafka Consumer Lag (파티션별)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "kafka_consumergroup_lag{consumergroup=\"coupon-issue-consumer\"} >= 0",
+          "legendFormat": "partition {{partition}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "CPU 사용률",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "process_cpu_usage", "legendFormat": "cpu usage (0-1)", "refId": "A" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "JVM Heap 메모리",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(jvm_memory_used_bytes{area=\"heap\"})", "legendFormat": "heap used", "refId": "A" }
+      ]
+    }
+  ]
+}

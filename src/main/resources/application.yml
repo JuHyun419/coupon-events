@@ -36,3 +36,20 @@ spring:
       type: batch
       concurrency: 3
       ack-mode: manual
+
+server:
+  tomcat:
+    mbeanregistry:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
