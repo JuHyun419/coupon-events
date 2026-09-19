@@ -1,0 +1,7 @@
+.git
+.gradle
+build
+.superpowers
+docs
+load-test
+*.md

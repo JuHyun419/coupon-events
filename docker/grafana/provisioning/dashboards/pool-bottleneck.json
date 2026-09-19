@@ -1,0 +1,46 @@
+{
+  "uid": "pool-bottleneck",
+  "title": "coupon-event: 풀 병목 검증",
+  "tags": ["coupon-event"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "HikariCP Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "hikaricp_connections_active", "legendFormat": "active", "refId": "A" },
+        { "expr": "hikaricp_connections_idle", "legendFormat": "idle", "refId": "B" },
+        { "expr": "hikaricp_connections_pending", "legendFormat": "pending (대기 중인 요청)", "refId": "C" },
+        { "expr": "hikaricp_connections_max", "legendFormat": "max (풀 크기)", "refId": "D" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Tomcat Threads",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "tomcat_threads_busy_threads", "legendFormat": "busy", "refId": "A" },
+        { "expr": "tomcat_threads_config_max_threads", "legendFormat": "max (풀 크기)", "refId": "B" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "전체 HTTP 처리량 (req/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(http_server_requests_seconds_count[1m]))", "legendFormat": "req/s", "refId": "A" }
+      ]
+    }
+  ]
+}
